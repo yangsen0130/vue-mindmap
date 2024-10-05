@@ -1,34 +1,45 @@
 <!-- src/components/MindMap.vue -->
 <template>
   <div class="p-4 relative" ref="mindmapContainer">
-    <svg :width="width" :height="height">
-      <!-- Render connections -->
-      <path
-        v-for="(conn, index) in connections"
-        :key="index"
-        :d="conn.d"
-        stroke="black"
-        fill="transparent"
-      />
-
-      <!-- Render nodes -->
-      <g v-for="node in allNodes" :key="node.id">
-        <rect
-          :x="node.x"
-          :y="node.y"
-          :width="nodeWidth"
-          :height="nodeHeight"
-          fill="lightblue"
+    <svg
+      :width="width"
+      :height="height"
+      @wheel.prevent="onWheel"
+      @mousedown="onMouseDown"
+      @mousemove="onMouseMove"
+      @mouseup="onMouseUp"
+      @mouseleave="onMouseUp"
+    >
+      <!-- Apply transformations to this group -->
+      <g :transform="`translate(${translateX}, ${translateY}) scale(${scale})`">
+        <!-- Render connections -->
+        <path
+          v-for="(conn, index) in connections"
+          :key="index"
+          :d="conn.d"
           stroke="black"
+          fill="transparent"
         />
-        <text
-          :x="node.x + nodeWidth / 2"
-          :y="node.y + nodeHeight / 2"
-          text-anchor="middle"
-          alignment-baseline="middle"
-        >
-          {{ node.content }}
-        </text>
+
+        <!-- Render nodes -->
+        <g v-for="node in allNodes" :key="node.id">
+          <rect
+            :x="node.x"
+            :y="node.y"
+            :width="nodeWidth"
+            :height="nodeHeight"
+            fill="lightblue"
+            stroke="black"
+          />
+          <text
+            :x="node.x + nodeWidth / 2"
+            :y="node.y + nodeHeight / 2"
+            text-anchor="middle"
+            alignment-baseline="middle"
+          >
+            {{ node.content }}
+          </text>
+        </g>
       </g>
     </svg>
   </div>
@@ -59,6 +70,17 @@ const mindmapContainer = ref<HTMLElement>();
 
 const allNodes = ref<any[]>([]);
 const connections = ref<any[]>([]);
+
+// Variables for zoom and pan
+const scale = ref(1);
+const translateX = ref(0);
+const translateY = ref(0);
+
+const isDragging = ref(false);
+const dragStartX = ref(0);
+const dragStartY = ref(0);
+const initialTranslateX = ref(0);
+const initialTranslateY = ref(0);
 
 // Function to compute positions
 const computePositions = () => {
@@ -97,6 +119,35 @@ const computePositions = () => {
   traverse(props.rootNode, 0, width.value / 2 - nodeWidth / 2, 20);
 };
 
+// Event handlers for zoom and pan
+const onWheel = (event: WheelEvent) => {
+  event.preventDefault();
+  const scaleAmount = -event.deltaY * 0.001;
+  const newScale = scale.value + scaleAmount;
+  scale.value = Math.min(Math.max(newScale, 0.1), 5); // Limit scale between 0.1 and 5
+};
+
+const onMouseDown = (event: MouseEvent) => {
+  isDragging.value = true;
+  dragStartX.value = event.clientX;
+  dragStartY.value = event.clientY;
+  initialTranslateX.value = translateX.value;
+  initialTranslateY.value = translateY.value;
+};
+
+const onMouseMove = (event: MouseEvent) => {
+  if (isDragging.value) {
+    const dx = event.clientX - dragStartX.value;
+    const dy = event.clientY - dragStartY.value;
+    translateX.value = initialTranslateX.value + dx;
+    translateY.value = initialTranslateY.value + dy;
+  }
+};
+
+const onMouseUp = () => {
+  isDragging.value = false;
+};
+
 // Watch for changes in rootNode
 watch(
   () => props.rootNode,
@@ -116,5 +167,12 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* Optional scoped styles */
+svg {
+  overflow: hidden;
+  cursor: grab;
+}
+
+svg:active {
+  cursor: grabbing;
+}
 </style>
