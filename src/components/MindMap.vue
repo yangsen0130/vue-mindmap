@@ -1,7 +1,17 @@
 <!-- src/components/MindMap.vue -->
 <template>
   <div class="p-4 relative" ref="mindmapContainer">
+    <!-- Error State -->
+    <div v-if="error" class="text-red-500 mb-2">
+      {{ error }}
+    </div>
+    <!-- Loading State -->
+    <div v-if="loading" class="flex items-center justify-center">
+      <p>Loading...</p>
+    </div>
+    <!-- Mind Map -->
     <svg
+      v-else
       :width="width"
       :height="height"
       @wheel.prevent="onWheel"
@@ -56,6 +66,9 @@ const props = defineProps({
   },
 });
 
+const error = ref<string | null>(null);
+const loading = ref(false);
+
 // Dimensions
 const nodeWidth = 100;
 const nodeHeight = 50;
@@ -84,39 +97,63 @@ const initialTranslateY = ref(0);
 
 // Function to compute positions
 const computePositions = () => {
-  allNodes.value = [];
-  connections.value = [];
+  if (!props.rootNode) {
+    error.value = 'No root node available.';
+    return;
+  }
 
-  const traverse = (node: Node, depth: number, xOffset: number, yOffset: number) => {
-    const x = xOffset;
-    const y = yOffset;
+  try {
+    loading.value = true;
+    allNodes.value = [];
+    connections.value = [];
 
-    allNodes.value.push({
-      id: node.id,
-      content: node.content,
-      x,
-      y,
-    });
+    const traverse = (
+      node: Node,
+      depth: number,
+      xOffset: number,
+      yOffset: number
+    ) => {
+      const x = xOffset;
+      const y = yOffset;
 
-    let childXOffset = x - ((node.children.length - 1) * (nodeWidth + horizontalSpacing)) / 2;
-
-    node.children.forEach((child) => {
-      // Draw connection
-      connections.value.push({
-        d: `M${x + nodeWidth / 2},${y + nodeHeight} 
-            C${x + nodeWidth / 2},${y + nodeHeight + verticalSpacing / 2} 
-            ${childXOffset + nodeWidth / 2},${y + nodeHeight + verticalSpacing / 2} 
-            ${childXOffset + nodeWidth / 2},${y + nodeHeight + verticalSpacing}`,
+      allNodes.value.push({
+        id: node.id,
+        content: node.content,
+        x,
+        y,
       });
 
-      // Recursively position child nodes
-      traverse(child, depth + 1, childXOffset, y + nodeHeight + verticalSpacing);
+      let childXOffset =
+        x - ((node.children.length - 1) * (nodeWidth + horizontalSpacing)) / 2;
 
-      childXOffset += nodeWidth + horizontalSpacing;
-    });
-  };
+      node.children.forEach((child) => {
+        // Draw connection
+        connections.value.push({
+          d: `M${x + nodeWidth / 2},${y + nodeHeight} 
+              C${x + nodeWidth / 2},${y + nodeHeight + verticalSpacing / 2} 
+              ${childXOffset + nodeWidth / 2},${y + nodeHeight + verticalSpacing / 2} 
+              ${childXOffset + nodeWidth / 2},${y + nodeHeight + verticalSpacing}`,
+        });
 
-  traverse(props.rootNode, 0, width.value / 2 - nodeWidth / 2, 20);
+        // Recursively position child nodes
+        traverse(
+          child,
+          depth + 1,
+          childXOffset,
+          y + nodeHeight + verticalSpacing
+        );
+
+        childXOffset += nodeWidth + horizontalSpacing;
+      });
+    };
+
+    traverse(props.rootNode, 0, width.value / 2 - nodeWidth / 2, 20);
+  } catch (err) {
+    error.value = 'Failed to compute mindmap positions.';
+    console.error(err);
+  } finally {
+    loading.value = false;
+  }
 };
 
 // Event handlers for zoom and pan

@@ -1,25 +1,23 @@
-<!-- src/components/OutlineNode.vue -->
 <template>
   <li class="ml-4 mb-2">
     <!-- Content Input -->
     <div class="flex items-center">
       <input
-        v-model="node.content"
+        v-model="currentMindMapNode.content"
         class="border-b flex-1"
-        @input="updateNode"
+        @input="updateNodeContentInDatabase"
       />
       <!-- Add Child Button -->
-      <button @click="addChild(node)" class="ml-2 text-blue-500">+</button>
+      <button @click="addChildNodeToParent(currentMindMapNode)" class="ml-2 text-blue-500">+</button>
       <!-- Remove Node Button -->
-      <button @click="removeNode(node)" class="ml-2 text-red-500">-</button>
+      <button @click="removeNodeFromParent(currentMindMapNode)" class="ml-2 text-red-500">-</button>
     </div>
     <!-- Recursive Children -->
     <ul>
       <OutlineNode
-        v-for="child in node.children"
+        v-for="child in currentMindMapNode.children"
         :key="child.id"
-        :node="child"
-        @updateNode="updateNode"
+        :currentMindMapNode="child"
       />
     </ul>
   </li>
@@ -27,43 +25,67 @@
 
 <script setup lang="ts">
 import { Node } from '../types/Node';
-import { ref } from 'vue';
+import { ref, inject } from 'vue';
+import OutlineNode from './OutlineNode.vue';
 
 const props = defineProps({
-  node: {
+  currentMindMapNode: {
     type: Object as () => Node,
     required: true,
   },
 });
 
-const emits = defineEmits(['updateNode']);
+const error = ref<string | null>(null);
 
-const node = ref(props.node);
+// Local reference to the node
+const currentMindMapNode = ref(props.currentMindMapNode);
 
-const updateNode = () => {
-  emits('updateNode');
+// Inject Neo4j driver and functions
+const neo4jDriver = inject('neo4jDriver') as any;
+const updateNodeInNeo4j = inject('updateNodeInNeo4j') as typeof import('../services/neo4jService').updateNodeInNeo4j;
+const addChildNodeInNeo4j = inject('addChildNodeInNeo4j') as typeof import('../services/neo4jService').addChildNodeInNeo4j;
+const removeNodeInNeo4j = inject('removeNodeInNeo4j') as typeof import('../services/neo4jService').removeNodeInNeo4j;
+
+// Update node content
+const updateNodeContentInDatabase = async () => {
+  try {
+    await updateNodeInNeo4j(neo4jDriver, currentMindMapNode.value);
+  } catch (err) {
+    error.value = 'Failed to update node.';
+    console.error(err);
+  }
 };
 
-const addChild = (parentNode: Node) => {
-  const newNode: Node = {
-    id: Date.now().toString(),
-    content: 'New Node',
-    parent: parentNode,
-    children: [],
-  };
-  parentNode.children.push(newNode);
-  updateNode();
+const addChildNodeToParent = async (parentNode: Node) => {
+  try {
+    const newNode: Node = {
+      id: Date.now().toString(),
+      content: 'New Node',
+      parent: parentNode,
+      children: [],
+    };
+    parentNode.children.push(newNode);
+    await addChildNodeInNeo4j(neo4jDriver, parentNode, newNode);
+  } catch (err) {
+    error.value = 'Failed to add child node.';
+    console.error(err);
+  }
 };
 
-const removeNode = (currentNode: Node) => {
-  if (currentNode.parent) {
-    const index = currentNode.parent.children.findIndex(
-      (child) => child.id === currentNode.id
-    );
-    if (index !== -1) {
-      currentNode.parent.children.splice(index, 1);
-      updateNode();
+const removeNodeFromParent = async (currentNode: Node) => {
+  try {
+    if (currentNode.parent) {
+      const index = currentNode.parent.children.findIndex(
+        (child) => child.id === currentNode.id
+      );
+      if (index !== -1) {
+        currentNode.parent.children.splice(index, 1);
+        await removeNodeInNeo4j(neo4jDriver, currentNode);
+      }
     }
+  } catch (err) {
+    error.value = 'Failed to remove node.';
+    console.error(err);
   }
 };
 </script>
