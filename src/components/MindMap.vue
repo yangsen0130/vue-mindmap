@@ -1,6 +1,5 @@
-<!-- src/components/MindMap.vue -->
 <template>
-  <div class="p-4 relative" ref="mindmapContainer">
+  <div class="p-4 relative w-full h-full" ref="mindmapContainer">
     <!-- Error State -->
     <div v-if="error" class="text-red-500 mb-2">
       {{ error }}
@@ -12,8 +11,9 @@
     <!-- Mind Map -->
     <svg
       v-else
-      :width="width"
-      :height="height"
+      width="100%"
+      height="100%"
+      :viewBox="`0 0 ${width} ${height}`"
       @wheel.prevent="onWheel"
       @mousedown="onMouseDown"
       @mousemove="onMouseMove"
@@ -56,7 +56,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue';
+import { onMounted, ref, watch, onUnmounted } from 'vue';
 import { Node } from '../types/Node';
 
 const props = defineProps({
@@ -194,16 +194,31 @@ watch(
   { deep: true, immediate: true }
 );
 
-onMounted(() => {
+const updateDimensions = () => {
   if (mindmapContainer.value) {
     const rect = mindmapContainer.value.getBoundingClientRect();
     width.value = rect.width;
+    height.value = rect.height;
     computePositions();
   }
+};
+
+onMounted(() => {
+  updateDimensions();
+  window.addEventListener('resize', updateDimensions);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('resize', updateDimensions);
 });
 </script>
 
 <style scoped>
+.p-4 {
+  width: 100%;
+  height: 100%;
+}
+
 svg {
   overflow: hidden;
   cursor: grab;
