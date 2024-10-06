@@ -36,16 +36,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, inject } from 'vue';
+import { ref, inject, computed } from 'vue';
 import { v4 as uuidv4 } from 'uuid';
 import { Node } from '../types/Node';
 import OutlineNode from './OutlineNode.vue';
 import { useMindMapStore } from '../store/mindmap';
+import { reactive } from 'vue';
 
 const mindmapStore = useMindMapStore();
 
-// Use the store's rootNode with a default value
-const currentMindMapNode = ref<Node | null>(mindmapStore.rootNode || null);
+// Use the store's rootNode as a computed property
+const currentMindMapNode = computed(() => mindmapStore.rootNode);
 
 const dataLoadingError = ref<string | null>(null);
 
@@ -53,24 +54,16 @@ const dataLoadingError = ref<string | null>(null);
 const neo4jDriver = inject('neo4jDriver') as any;
 const addChildNodeInNeo4j = inject('addChildNodeInNeo4j') as typeof import('../services/neo4jService').addChildNodeInNeo4j;
 
-// Watch for changes in the store's rootNode
-watch(
-  () => mindmapStore.rootNode,
-  (newVal) => {
-    currentMindMapNode.value = newVal || null;
-  }
-);
-
 // Function to add a child node and persist it to Neo4j
 const addChildNodeToParent = async (parentNode: Node) => {
   try {
-    const newNode: Node = {
+    const newNode: Node = reactive({
       id: uuidv4(),
       content: 'New Node',
       parent: parentNode,
       children: [],
       isCollapsed: false,
-    };
+    });
     parentNode.children.push(newNode);
     await addChildNodeInNeo4j(neo4jDriver, parentNode, newNode);
     mindmapStore.addNodeToMap(newNode);

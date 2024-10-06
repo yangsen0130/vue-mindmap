@@ -34,6 +34,7 @@ import { Node } from '../types/Node';
 import { ref, inject } from 'vue';
 import { useMindMapStore } from '../store/mindmap';
 import { v4 as uuidv4 } from 'uuid';
+import { reactive } from 'vue';
 
 const props = defineProps({
   currentMindMapNode: {
@@ -68,13 +69,13 @@ const updateNodeContentInDatabase = async () => {
 
 const addChildNodeToParent = async (parentNode: Node) => {
   try {
-    const newNode: Node = {
+    const newNode: Node = reactive({
       id: uuidv4(),
       content: 'New Node',
       parent: parentNode,
       children: [],
       isCollapsed: false,
-    };
+    });
     parentNode.children.push(newNode);
     await addChildNodeInNeo4j(neo4jDriver, parentNode, newNode);
     mindmapStore.addNodeToMap(newNode);

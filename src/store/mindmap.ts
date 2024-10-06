@@ -2,6 +2,7 @@
 
 import { defineStore } from 'pinia';
 import { Node } from '../types/Node';
+import { reactive } from 'vue';
 
 interface MindMapState {
   rootNode: Node | null;
@@ -35,13 +36,13 @@ export const useMindMapStore = defineStore('mindmap', {
           this.setRootNode(rootNode);
         } else {
           // If no data, initialize with a default node
-          const rootNode: Node = {
+          const rootNode: Node = reactive({
             id: 'root',
             content: 'My Mindmap',
             parent: null,
             children: [],
             isCollapsed: false,
-          };
+          });
           this.setRootNode(rootNode);
         }
       } catch (error) {
@@ -65,13 +66,13 @@ export const useMindMapStore = defineStore('mindmap', {
 
       // Create Node instances for each node
       [mainNodeData, ...childNodes].forEach((nodeData: any) => {
-        nodesMap.set(nodeData.elementId, {
+        nodesMap.set(nodeData.elementId, reactive({
           id: nodeData.properties.id,
           content: nodeData.properties.content,
           isCollapsed: nodeData.properties.isCollapsed || false,
           parent: null,
           children: [],
-        });
+        }));
       });
 
       // Build relationships
@@ -92,6 +93,18 @@ export const useMindMapStore = defineStore('mindmap', {
 
       // Return the root node
       return nodesMap.get(mainNodeData.elementId) as Node;
+    },
+    updateNodeContent(nodeId: string, content: string) {
+      const node = this.nodesById.get(nodeId);
+      if (node) {
+        node.content = content;
+      }
+    },
+    updateNodeCollapseState(nodeId: string, isCollapsed: boolean) {
+      const node = this.nodesById.get(nodeId);
+      if (node) {
+        node.isCollapsed = isCollapsed;
+      }
     },
   },
 });

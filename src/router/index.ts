@@ -22,7 +22,7 @@ const router = createRouter({
 })
 
 // Navigation guard to protect routes that require authentication
-router.beforeEach((to, from, next) => {
+router.beforeEach((to, _, next) => {
   const userStore = useUserStore(pinia)
   if (to.meta.requiresAuth && !userStore.user) {
     next('/login')
