@@ -38,6 +38,7 @@
           :node="node"
           :nodeWidth="nodeWidth"
           :nodeHeight="nodeHeight"
+          @nodeCollapseToggle="computePositions"
         />
       </g>
     </svg>
@@ -45,7 +46,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, watch, onUnmounted, inject } from 'vue';
+import { onMounted, ref, watch, onUnmounted } from 'vue';
 import { Node } from '../types/Node';
 import { useMindMapStore } from '../store/mindmap';
 import MindMapNode from './MindMapNode.vue'; // Import the new component
@@ -85,7 +86,7 @@ const initialTranslateX = ref(0);
 const initialTranslateY = ref(0);
 
 // Inject Neo4j driver and functions
-const neo4jDriver = inject('neo4jDriver') as any;
+// const neo4jDriver = inject('neo4jDriver') as any;
 
 // Get the mindmap store
 const mindmapStore = useMindMapStore();
@@ -108,12 +109,17 @@ const computePositions = () => {
       node: Node,
       depth: number,
       xOffset: number,
-      yOffset: number
+      yOffset: number,
+      parentCollapsed: boolean
     ) => {
       if (visitedNodes.has(node.id)) {
         return; // Skip if already visited to avoid duplicates
       }
       visitedNodes.add(node.id);
+
+      if (parentCollapsed) {
+        return; // Skip rendering this node if parent is collapsed
+      }
 
       const x = xOffset;
       const y = yOffset;
@@ -126,6 +132,10 @@ const computePositions = () => {
       };
 
       allNodes.value.push(positionedNode);
+
+      if (node.isCollapsed) {
+        return; // Do not traverse further if node is collapsed
+      }
 
       let childXOffset =
         x - ((node.children.length - 1) * (nodeWidth + horizontalSpacing)) / 2;
@@ -144,14 +154,15 @@ const computePositions = () => {
           child,
           depth + 1,
           childXOffset,
-          y + nodeHeight + verticalSpacing
+          y + nodeHeight + verticalSpacing,
+          parentCollapsed || node.isCollapsed
         );
 
         childXOffset += nodeWidth + horizontalSpacing;
       });
     };
 
-    traverse(mindmapStore.rootNode, 0, width.value / 2 - nodeWidth / 2, 20);
+    traverse(mindmapStore.rootNode, 0, width.value / 2 - nodeWidth / 2, 20, false);
   } catch (err) {
     error.value = 'Failed to compute mindmap positions.';
     console.error(err);

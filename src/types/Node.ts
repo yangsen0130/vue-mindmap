@@ -3,5 +3,5 @@ export interface Node {
   content: string;
   parent: Node | null;
   children: Node[];
-  collapsed?: boolean;
+  isCollapsed: boolean;
 }

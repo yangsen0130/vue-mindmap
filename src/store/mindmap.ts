@@ -1,7 +1,6 @@
 // src/store/mindmap.ts
 
 import { defineStore } from 'pinia';
-// import neo4j from 'neo4j-driver';
 import { Node } from '../types/Node';
 
 interface MindMapState {
@@ -41,6 +40,7 @@ export const useMindMapStore = defineStore('mindmap', {
             content: 'My Mindmap',
             parent: null,
             children: [],
+            isCollapsed: false,
           };
           this.setRootNode(rootNode);
         }
@@ -68,6 +68,7 @@ export const useMindMapStore = defineStore('mindmap', {
         nodesMap.set(nodeData.elementId, {
           id: nodeData.properties.id,
           content: nodeData.properties.content,
+          isCollapsed: nodeData.properties.isCollapsed || false,
           parent: null,
           children: [],
         });
@@ -83,8 +84,8 @@ export const useMindMapStore = defineStore('mindmap', {
           if (parentNode && childNode) {
             childNode.parent = parentNode;
             if (!parentNode.children.some(existingChild => existingChild.id === childNode.id)) {
-                parentNode.children.push(childNode);
-              }
+              parentNode.children.push(childNode);
+            }
           }
         });
       });

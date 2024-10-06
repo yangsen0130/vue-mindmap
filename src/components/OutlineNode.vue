@@ -1,9 +1,12 @@
-<!-- src/components/OutlineNode.vue -->
-
 <template>
   <li class="ml-4 mb-2">
     <!-- Content Input -->
     <div class="flex items-center">
+      <!-- Toggle button -->
+      <button v-if="currentMindMapNode.children.length > 0" @click="toggleCollapse" class="mr-2">
+        <span v-if="currentMindMapNode.isCollapsed">►</span>
+        <span v-else>▼</span>
+      </button>
       <input
         v-model="currentMindMapNode.content"
         class="border-b flex-1"
@@ -15,7 +18,7 @@
       <button @click="removeNodeFromParent(currentMindMapNode)" class="ml-2 text-red-500">-</button>
     </div>
     <!-- Recursive Children -->
-    <ul v-if="!renderedNodeIds.has(currentMindMapNode.id)">
+    <ul v-if="!currentMindMapNode.isCollapsed && !renderedNodeIds.has(currentMindMapNode.id)">
       <OutlineNode
         v-for="child in currentMindMapNode.children"
         :key="child.id"
@@ -70,6 +73,7 @@ const addChildNodeToParent = async (parentNode: Node) => {
       content: 'New Node',
       parent: parentNode,
       children: [],
+      isCollapsed: false,
     };
     parentNode.children.push(newNode);
     await addChildNodeInNeo4j(neo4jDriver, parentNode, newNode);
@@ -94,6 +98,17 @@ const removeNodeFromParent = async (currentNode: Node) => {
     }
   } catch (err) {
     error.value = 'Failed to remove node.';
+    console.error(err);
+  }
+};
+
+// Toggle collapse state
+const toggleCollapse = async () => {
+  props.currentMindMapNode.isCollapsed = !props.currentMindMapNode.isCollapsed;
+  try {
+    await updateNodeInNeo4j(neo4jDriver, props.currentMindMapNode);
+  } catch (err) {
+    error.value = 'Failed to update node state.';
     console.error(err);
   }
 };

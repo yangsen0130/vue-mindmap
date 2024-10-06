@@ -11,16 +11,14 @@ export const initializeNeo4jDriver = () => {
   return neo4j.driver(uri, neo4j.auth.basic(user, password));
 };
 
-// Note: Removed the loadMindMapData function as data loading is now handled in the Pinia store
-
 // Function to update a node in Neo4j
 export const updateNodeInNeo4j = async (driver: any, node: Node): Promise<void> => {
   const session = driver.session();
   try {
-    // Update the node content in Neo4j
+    // Update the node content and isCollapsed in Neo4j
     await session.run(
-      'MATCH (n:MindMapNode {id: $id}) SET n.content = $content',
-      { id: node.id, content: node.content }
+      'MATCH (n:MindMapNode {id: $id}) SET n.content = $content, n.isCollapsed = $isCollapsed',
+      { id: node.id, content: node.content, isCollapsed: node.isCollapsed }
     );
   } catch (error) {
     console.error('Failed to update node in Neo4j:', error);
@@ -38,10 +36,10 @@ export const addChildNodeInNeo4j = async (driver: any, parentNode: Node, childNo
     await session.run(
       `
       MATCH (p:MindMapNode {id: $parentId})
-      CREATE (c:MindMapNode {id: $childId, content: $content})
+      CREATE (c:MindMapNode {id: $childId, content: $content, isCollapsed: $isCollapsed})
       CREATE (p)-[:IS_CHILD]->(c)
       `,
-      { parentId: parentNode.id, childId: childNode.id, content: childNode.content }
+      { parentId: parentNode.id, childId: childNode.id, content: childNode.content, isCollapsed: childNode.isCollapsed }
     );
   } catch (error) {
     console.error('Failed to add child node in Neo4j:', error);

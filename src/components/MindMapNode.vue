@@ -8,6 +8,30 @@
         fill="lightblue"
         stroke="black"
       />
+      <!-- Collapse/Expand Circle -->
+      <circle
+        v-if="node.children.length > 0"
+        :cx="node.x + nodeWidth - 10"
+        :cy="node.y + 10"
+        r="5"
+        fill="white"
+        stroke="black"
+        @click.stop="toggleCollapse"
+        style="cursor: pointer;"
+      />
+      <!-- Plus/Minus Sign -->
+      <text
+        v-if="node.children.length > 0"
+        :x="node.x + nodeWidth - 10"
+        :y="node.y + 13"
+        text-anchor="middle"
+        alignment-baseline="middle"
+        font-size="10"
+        @click.stop="toggleCollapse"
+        style="cursor: pointer;"
+      >
+        {{ node.isCollapsed ? '+' : '-' }}
+      </text>
       <!-- Editing Input -->
       <template v-if="isEditing">
         <foreignObject
@@ -45,7 +69,7 @@
   <script setup lang="ts">
   import { ref, inject } from 'vue';
   import { Node } from '../types/Node';
-  import { useMindMapStore } from '../store/mindmap';
+//   import { useMindMapStore } from '../store/mindmap';
   
   // Props
   const props = defineProps({
@@ -65,7 +89,6 @@
   
   const isEditing = ref(false);
   const editingContent = ref('');
-  const mindmapStore = useMindMapStore();
   
   // Inject Neo4j driver and update function
   const neo4jDriver = inject('neo4jDriver') as any;
@@ -98,6 +121,20 @@
       (event.target as HTMLInputElement).blur();
     }
   };
+  
+  // Toggle collapse state
+  const toggleCollapse = async (event: MouseEvent) => {
+    event.stopPropagation();
+    props.node.isCollapsed = !props.node.isCollapsed;
+    try {
+      await updateNodeInNeo4j(neo4jDriver, props.node);
+      emit('nodeCollapseToggle');
+    } catch (error) {
+      console.error('Failed to update node collapse state:', error);
+    }
+  };
+  
+  const emit = defineEmits(['nodeCollapseToggle']);
   </script>
   
   <style scoped>

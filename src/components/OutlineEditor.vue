@@ -67,6 +67,7 @@ const addChildNodeToParent = async (parentNode: Node) => {
       content: 'New Node',
       parent: parentNode,
       children: [],
+      isCollapsed: false,
     };
     parentNode.children.push(newNode);
     await addChildNodeInNeo4j(neo4jDriver, parentNode, newNode);
