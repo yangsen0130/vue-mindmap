@@ -1,3 +1,5 @@
+<!-- src/components/OutlineEditor.vue -->
+
 <template>
   <div class="p-4">
     <!-- Error State -->
@@ -36,18 +38,12 @@ import { ref, watch, inject } from 'vue';
 import { v4 as uuidv4 } from 'uuid';
 import { Node } from '../types/Node';
 import OutlineNode from './OutlineNode.vue';
+import { useMindMapStore } from '../store/mindmap';
 
-const props = defineProps({
-  modelValue: {
-    type: Object as () => Node,
-    required: true,
-  },
-});
+const mindmapStore = useMindMapStore();
 
-const emits = defineEmits(['update:modelValue']);
-
-// Local copy of the node to enable two-way binding
-const currentMindMapNode = ref(props.modelValue);
+// Use the store's rootNode
+const currentMindMapNode = ref(mindmapStore.rootNode);
 
 const dataLoadingError = ref<string | null>(null);
 
@@ -55,13 +51,12 @@ const dataLoadingError = ref<string | null>(null);
 const neo4jDriver = inject('neo4jDriver') as any;
 const addChildNodeInNeo4j = inject('addChildNodeInNeo4j') as typeof import('../services/neo4jService').addChildNodeInNeo4j;
 
-// Watch for changes and emit updates
+// Watch for changes in the store's rootNode
 watch(
-  () => currentMindMapNode.value,
+  () => mindmapStore.rootNode,
   (newVal) => {
-    emits('update:modelValue', newVal);
-  },
-  { deep: true }
+    currentMindMapNode.value = newVal;
+  }
 );
 
 // Function to add a child node and persist it to Neo4j
@@ -75,6 +70,7 @@ const addChildNodeToParent = async (parentNode: Node) => {
     };
     parentNode.children.push(newNode);
     await addChildNodeInNeo4j(neo4jDriver, parentNode, newNode);
+    mindmapStore.addNodeToMap(newNode);
   } catch (err) {
     dataLoadingError.value = 'Failed to add child node.';
     console.error(err);

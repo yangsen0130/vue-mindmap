@@ -1,3 +1,5 @@
+<!-- src/components/MindMap.vue -->
+
 <template>
   <div class="p-4 relative w-full h-full" ref="mindmapContainer">
     <!-- Error State -->
@@ -58,13 +60,7 @@
 <script setup lang="ts">
 import { onMounted, ref, watch, onUnmounted } from 'vue';
 import { Node } from '../types/Node';
-
-const props = defineProps({
-  rootNode: {
-    type: Object as () => Node,
-    required: true,
-  },
-});
+import { useMindMapStore } from '../store/mindmap';
 
 const error = ref<string | null>(null);
 const loading = ref(false);
@@ -95,9 +91,12 @@ const dragStartY = ref(0);
 const initialTranslateX = ref(0);
 const initialTranslateY = ref(0);
 
+// Get the mindmap store
+const mindmapStore = useMindMapStore();
+
 // Function to compute positions
 const computePositions = () => {
-  if (!props.rootNode) {
+  if (!mindmapStore.rootNode) {
     error.value = 'No root node available.';
     return;
   }
@@ -107,12 +106,19 @@ const computePositions = () => {
     allNodes.value = [];
     connections.value = [];
 
+    const visitedNodes = new Set<string>();
+
     const traverse = (
       node: Node,
       depth: number,
       xOffset: number,
       yOffset: number
     ) => {
+      if (visitedNodes.has(node.id)) {
+        return; // Skip if already visited to avoid duplicates
+      }
+      visitedNodes.add(node.id);
+
       const x = xOffset;
       const y = yOffset;
 
@@ -147,7 +153,7 @@ const computePositions = () => {
       });
     };
 
-    traverse(props.rootNode, 0, width.value / 2 - nodeWidth / 2, 20);
+    traverse(mindmapStore.rootNode, 0, width.value / 2 - nodeWidth / 2, 20);
   } catch (err) {
     error.value = 'Failed to compute mindmap positions.';
     console.error(err);
@@ -185,9 +191,9 @@ const onMouseUp = () => {
   isDragging.value = false;
 };
 
-// Watch for changes in rootNode
+// Watch for changes in the store's rootNode
 watch(
-  () => props.rootNode,
+  () => mindmapStore.rootNode,
   () => {
     computePositions();
   },

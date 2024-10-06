@@ -1,3 +1,5 @@
+<!-- src/views/MindMapPage.vue -->
+
 <template>
   <div class="min-h-screen flex relative">
     <!-- Sidebar -->
@@ -9,7 +11,6 @@
           <span>{{ user?.username }}</span>
         </div>
       </div>
-
     </aside>
 
     <!-- Main Content -->
@@ -30,12 +31,10 @@
         <!-- Conditional rendering based on mode -->
         <OutlineEditor
           v-if="mode === 'outline' || mode === 'both'"
-          v-model="rootMindMapNode"
           :class="mode === 'both' ? 'w-1/2 border-r' : 'w-full'"
         />
         <MindMap
           v-if="mode === 'mindmap' || mode === 'both'"
-          :rootNode="rootMindMapNode"
           :class="mode === 'both' ? 'w-1/2' : 'w-full'"
         />
       </div>
@@ -80,29 +79,25 @@
 
 <script setup lang="ts">
 import { ref, onMounted, provide, computed } from 'vue';
+import { useMindMapStore } from '../store/mindmap';
 import OutlineEditor from '../components/OutlineEditor.vue';
 import MindMap from '../components/MindMap.vue';
-import { Node } from '../types/Node';
 import {
   initializeNeo4jDriver,
-  loadMindMapData,
   updateNodeInNeo4j,
   addChildNodeInNeo4j,
   removeNodeInNeo4j,
 } from '../services/neo4jService.ts';
 import { useUserStore } from '../store/user';
 import { useRouter } from 'vue-router';
-// import { ElInput, ElMenu, ElMenuItem, ElDropdown, ElDropdownMenu, ElDropdownItem } from 'element-plus';
 
 // Initialize state variables
 const isDataLoading = ref(true);
 const dataLoadingError = ref<string | null>(null);
-const rootMindMapNode = ref<Node | null>(null);
 const mode = ref('both'); // Possible values: 'outline', 'mindmap', 'both'
 
 // Sidebar visibility
 const isSidebarVisible = ref(true);
-// const searchQuery = ref('');
 
 // Create Neo4j driver instance
 const neo4jDriverInstance = initializeNeo4jDriver();
@@ -113,10 +108,13 @@ provide('updateNodeInNeo4j', updateNodeInNeo4j);
 provide('addChildNodeInNeo4j', addChildNodeInNeo4j);
 provide('removeNodeInNeo4j', removeNodeInNeo4j);
 
+// Get the mindmap store
+const mindmapStore = useMindMapStore();
+
 // Load data when the component is mounted
 onMounted(async () => {
   try {
-    rootMindMapNode.value = await loadMindMapData(neo4jDriverInstance);
+    await mindmapStore.loadMindMapData(neo4jDriverInstance);
   } catch (err) {
     dataLoadingError.value = 'Failed to load data from Neo4j.';
     console.error(err);
@@ -144,7 +142,6 @@ const handleDropdownCommand = (command: string) => {
     logout();
   }
 };
-
 </script>
 
 <style scoped>

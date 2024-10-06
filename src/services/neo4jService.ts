@@ -1,3 +1,5 @@
+// src/services/neo4jService.ts
+
 import neo4j from 'neo4j-driver';
 import { Node } from '../types/Node';
 
@@ -9,77 +11,7 @@ export const initializeNeo4jDriver = () => {
   return neo4j.driver(uri, neo4j.auth.basic(user, password));
 };
 
-// Function to load mind map data from Neo4j
-export const loadMindMapData = async (driver: any): Promise<Node> => {
-  const session = driver.session();
-  try {
-    // Query to get the root node and its relationships
-    const result = await session.run(`
-      MATCH (n:MindMapRoot)
-      OPTIONAL MATCH (n)-[r:IS_CHILD*]->(child)
-      RETURN n, collect(r), collect(child)
-    `);
-
-    if (result.records.length > 0) {
-      const record = result.records[0];
-      const mainNode = record.get('n');
-      const relationships = record.get('collect(r)');
-      const childNodes = record.get('collect(child)');
-
-      // Build the node tree
-      return buildNodeTreeFromNeo4jData(mainNode, relationships, childNodes);
-    } else {
-      // If no data, initialize with a default node
-      return {
-        id: 'root',
-        content: 'My Mindmap',
-        parent: null,
-        children: [],
-      };
-    }
-  } catch (error) {
-    console.error('Failed to load data from Neo4j:', error);
-    throw error;
-  } finally {
-    await session.close();
-  }
-};
-
-// Function to build the node tree from Neo4j data
-const buildNodeTreeFromNeo4jData = (
-  mainNodeData: any,
-  relationships: any[],
-  childNodes: any[]
-): Node => {
-  const nodesMap = new Map<string, Node>();
-
-  // Create Node instances for each node
-  [mainNodeData, ...childNodes].forEach((nodeData: any) => {
-    nodesMap.set(nodeData.elementId, {
-      id: nodeData.properties.id,
-      content: nodeData.properties.content,
-      parent: null,
-      children: [],
-    });
-  });
-
-  // Build relationships
-  relationships.forEach((relChain: any) => {
-    relChain.forEach((relationship: any) => {
-      const parentId = relationship.startNodeElementId;
-      const childId = relationship.endNodeElementId;
-      const parentNode = nodesMap.get(parentId);
-      const childNode = nodesMap.get(childId);
-      if (parentNode && childNode) {
-        childNode.parent = parentNode;
-        parentNode.children.push(childNode);
-      }
-    });
-  });
-
-  // Return the root node
-  return nodesMap.get(mainNodeData.elementId) as Node;
-};
+// Note: Removed the loadMindMapData function as data loading is now handled in the Pinia store
 
 // Function to update a node in Neo4j
 export const updateNodeInNeo4j = async (driver: any, node: Node): Promise<void> => {
