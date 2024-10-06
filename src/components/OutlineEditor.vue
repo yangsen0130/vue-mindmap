@@ -71,6 +71,7 @@ const addChildNodeToParent = async (parentNode: Node) => {
     parentNode.children.push(newNode);
     await addChildNodeInNeo4j(neo4jDriver, parentNode, newNode);
     mindmapStore.addNodeToMap(newNode);
+    console.log('Added child node:', newNode);  
   } catch (err) {
     dataLoadingError.value = 'Failed to add child node.';
     console.error(err);

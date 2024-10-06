@@ -82,7 +82,9 @@ export const useMindMapStore = defineStore('mindmap', {
           const childNode = nodesMap.get(childId);
           if (parentNode && childNode) {
             childNode.parent = parentNode;
-            parentNode.children.push(childNode);
+            if (!parentNode.children.some(existingChild => existingChild.id === childNode.id)) {
+                parentNode.children.push(childNode);
+              }
           }
         });
       });

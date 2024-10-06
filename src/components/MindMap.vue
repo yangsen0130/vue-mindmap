@@ -1,5 +1,3 @@
-<!-- src/components/MindMap.vue -->
-
 <template>
   <div class="p-4 relative w-full h-full" ref="mindmapContainer">
     <!-- Error State -->
@@ -33,34 +31,24 @@
           fill="transparent"
         />
 
-        <!-- Render nodes -->
-        <g v-for="node in allNodes" :key="node.id">
-          <rect
-            :x="node.x"
-            :y="node.y"
-            :width="nodeWidth"
-            :height="nodeHeight"
-            fill="lightblue"
-            stroke="black"
-          />
-          <text
-            :x="node.x + nodeWidth / 2"
-            :y="node.y + nodeHeight / 2"
-            text-anchor="middle"
-            alignment-baseline="middle"
-          >
-            {{ node.content }}
-          </text>
-        </g>
+        <!-- Render nodes using MindMapNode component -->
+        <MindMapNode
+          v-for="node in allNodes"
+          :key="node.id"
+          :node="node"
+          :nodeWidth="nodeWidth"
+          :nodeHeight="nodeHeight"
+        />
       </g>
     </svg>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, watch, onUnmounted } from 'vue';
+import { onMounted, ref, watch, onUnmounted, inject } from 'vue';
 import { Node } from '../types/Node';
 import { useMindMapStore } from '../store/mindmap';
+import MindMapNode from './MindMapNode.vue'; // Import the new component
 
 const error = ref<string | null>(null);
 const loading = ref(false);
@@ -77,7 +65,12 @@ const height = ref(600);
 
 const mindmapContainer = ref<HTMLElement>();
 
-const allNodes = ref<any[]>([]);
+interface PositionedNode extends Node {
+  x: number;
+  y: number;
+}
+
+const allNodes = ref<PositionedNode[]>([]);
 const connections = ref<any[]>([]);
 
 // Variables for zoom and pan
@@ -90,6 +83,9 @@ const dragStartX = ref(0);
 const dragStartY = ref(0);
 const initialTranslateX = ref(0);
 const initialTranslateY = ref(0);
+
+// Inject Neo4j driver and functions
+const neo4jDriver = inject('neo4jDriver') as any;
 
 // Get the mindmap store
 const mindmapStore = useMindMapStore();
@@ -122,12 +118,14 @@ const computePositions = () => {
       const x = xOffset;
       const y = yOffset;
 
-      allNodes.value.push({
-        id: node.id,
-        content: node.content,
+      // Create a PositionedNode by extending the node
+      const positionedNode: PositionedNode = {
+        ...node,
         x,
         y,
-      });
+      };
+
+      allNodes.value.push(positionedNode);
 
       let childXOffset =
         x - ((node.children.length - 1) * (nodeWidth + horizontalSpacing)) / 2;
