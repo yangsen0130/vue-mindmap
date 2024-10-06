@@ -9,13 +9,14 @@
 
     <!-- Title Input -->
     <input
+      v-if="currentMindMapNode"
       v-model="currentMindMapNode.content"
       class="w-full text-xl font-bold mb-4 border-b"
       placeholder="Title"
     />
 
     <!-- Recursive List -->
-    <ul>
+    <ul v-if="currentMindMapNode">
       <OutlineNode
         v-for="child in currentMindMapNode.children"
         :key="child.id"
@@ -25,6 +26,7 @@
 
     <!-- Add Child Button -->
     <button
+      v-if="currentMindMapNode"
       class="mt-4 px-4 py-2 bg-blue-500 text-white rounded"
       @click="addChildNodeToParent(currentMindMapNode)"
     >
@@ -42,8 +44,8 @@ import { useMindMapStore } from '../store/mindmap';
 
 const mindmapStore = useMindMapStore();
 
-// Use the store's rootNode
-const currentMindMapNode = ref(mindmapStore.rootNode);
+// Use the store's rootNode with a default value
+const currentMindMapNode = ref<Node | null>(mindmapStore.rootNode || null);
 
 const dataLoadingError = ref<string | null>(null);
 
@@ -55,7 +57,7 @@ const addChildNodeInNeo4j = inject('addChildNodeInNeo4j') as typeof import('../s
 watch(
   () => mindmapStore.rootNode,
   (newVal) => {
-    currentMindMapNode.value = newVal;
+    currentMindMapNode.value = newVal || null;
   }
 );
 

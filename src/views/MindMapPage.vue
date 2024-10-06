@@ -89,7 +89,7 @@ import {
   removeNodeInNeo4j,
 } from '../services/neo4jService.ts';
 import { useUserStore } from '../store/user';
-import { useRouter } from 'vue-router';
+// import { useRouter } from 'vue-router';
 
 // Initialize state variables
 const isDataLoading = ref(true);
@@ -125,23 +125,23 @@ onMounted(async () => {
 
 // Logout function
 const userStore = useUserStore();
-const router = useRouter();
+// const router = useRouter();
 const user = computed(() => userStore.user);
 
-const logout = () => {
-  userStore.clearUser();
-  router.push('/login');
-};
+// const logout = () => {
+//   userStore.clearUser();
+//   router.push('/login');
+// };
 
 const toggleSidebar = () => {
   isSidebarVisible.value = !isSidebarVisible.value;
 };
 
-const handleDropdownCommand = (command: string) => {
-  if (command === 'logout') {
-    logout();
-  }
-};
+// const handleDropdownCommand = (command: string) => {
+//   if (command === 'logout') {
+//     logout();
+//   }
+// };
 </script>
 
 <style scoped>
