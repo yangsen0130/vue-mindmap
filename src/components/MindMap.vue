@@ -49,7 +49,7 @@
 import { onMounted, ref, watch, onUnmounted } from 'vue';
 import { Node } from '../types/Node';
 import { useMindMapStore } from '../store/mindmap';
-import MindMapNode from './MindMapNode.vue'; // Import the new component
+import MindMapNode from './MindMapNode.vue';
 
 const error = ref<string | null>(null);
 const loading = ref(false);
@@ -84,9 +84,6 @@ const dragStartX = ref(0);
 const dragStartY = ref(0);
 const initialTranslateX = ref(0);
 const initialTranslateY = ref(0);
-
-// Inject Neo4j driver and functions
-// const neo4jDriver = inject('neo4jDriver') as any;
 
 // Get the mindmap store
 const mindmapStore = useMindMapStore();
@@ -137,32 +134,32 @@ const computePositions = () => {
         return; // Do not traverse further if node is collapsed
       }
 
-      let childXOffset =
-        x - ((node.children.length - 1) * (nodeWidth + horizontalSpacing)) / 2;
+      let childYOffset =
+        y - ((node.children.length - 1) * (nodeHeight + verticalSpacing)) / 2;
 
       node.children.forEach((child) => {
         // Draw connection
         connections.value.push({
-          d: `M${x + nodeWidth / 2},${y + nodeHeight} 
-              C${x + nodeWidth / 2},${y + nodeHeight + verticalSpacing / 2} 
-              ${childXOffset + nodeWidth / 2},${y + nodeHeight + verticalSpacing / 2} 
-              ${childXOffset + nodeWidth / 2},${y + nodeHeight + verticalSpacing}`,
+          d: `M${x + nodeWidth},${y + nodeHeight / 2} 
+              C${x + nodeWidth + horizontalSpacing / 2},${y + nodeHeight / 2} 
+              ${x + nodeWidth + horizontalSpacing / 2},${childYOffset + nodeHeight / 2} 
+              ${x + nodeWidth + horizontalSpacing},${childYOffset + nodeHeight / 2}`,
         });
 
         // Recursively position child nodes
         traverse(
           child,
           depth + 1,
-          childXOffset,
-          y + nodeHeight + verticalSpacing,
+          x + nodeWidth + horizontalSpacing,
+          childYOffset,
           parentCollapsed || node.isCollapsed
         );
 
-        childXOffset += nodeWidth + horizontalSpacing;
+        childYOffset += nodeHeight + verticalSpacing;
       });
     };
 
-    traverse(mindmapStore.rootNode, 0, width.value / 2 - nodeWidth / 2, 20, false);
+    traverse(mindmapStore.rootNode, 0, 20, height.value / 2 - nodeHeight / 2, false);
   } catch (err) {
     error.value = 'Failed to compute mindmap positions.';
     console.error(err);
