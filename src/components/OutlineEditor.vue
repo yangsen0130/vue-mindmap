@@ -33,6 +33,7 @@
 
 <script setup lang="ts">
 import { ref, watch, inject } from 'vue';
+import { v4 as uuidv4 } from 'uuid';
 import { Node } from '../types/Node';
 import OutlineNode from './OutlineNode.vue';
 
@@ -67,7 +68,7 @@ watch(
 const addChildNodeToParent = async (parentNode: Node) => {
   try {
     const newNode: Node = {
-      id: Date.now().toString(),
+      id: uuidv4(),
       content: 'New Node',
       parent: parentNode,
       children: [],

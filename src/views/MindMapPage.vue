@@ -1,7 +1,19 @@
 <template>
   <div class="min-h-screen flex relative">
+    <!-- Sidebar -->
+    <aside v-if="isSidebarVisible" class="w-64 bg-gray-800 text-white flex flex-col">
+      <!-- User Profile Section -->
+      <div class="p-4 flex items-center justify-between border-b border-gray-700">
+        <div class="flex items-center">
+          <i class="el-icon-user-solid text-2xl mr-2"></i>
+          <span>{{ user?.username }}</span>
+        </div>
+      </div>
+
+    </aside>
+
     <!-- Main Content -->
-    <div class="flex-1 flex flex-col">
+    <div :class="isSidebarVisible ? 'flex-1 flex flex-col' : 'w-full flex flex-col'">
       <!-- Loading State -->
       <div v-if="isDataLoading" class="flex-1 flex items-center justify-center">
         <p>Loading...</p>
@@ -28,6 +40,11 @@
         />
       </div>
     </div>
+
+    <!-- Toggle Sidebar Button -->
+    <button @click="toggleSidebar" class="fixed top-4 left-4 z-50 bg-gray-800 text-white p-2 rounded-md focus:outline-none">
+      <i :class="isSidebarVisible ? 'el-icon-arrow-left' : 'el-icon-arrow-right'"></i>
+    </button>
 
     <!-- Mode Switcher -->
     <div class="fixed bottom-4 right-4 z-50">
@@ -75,12 +92,17 @@ import {
 } from '../services/neo4jService.ts';
 import { useUserStore } from '../store/user';
 import { useRouter } from 'vue-router';
+// import { ElInput, ElMenu, ElMenuItem, ElDropdown, ElDropdownMenu, ElDropdownItem } from 'element-plus';
 
 // Initialize state variables
 const isDataLoading = ref(true);
 const dataLoadingError = ref<string | null>(null);
 const rootMindMapNode = ref<Node | null>(null);
 const mode = ref('both'); // Possible values: 'outline', 'mindmap', 'both'
+
+// Sidebar visibility
+const isSidebarVisible = ref(true);
+// const searchQuery = ref('');
 
 // Create Neo4j driver instance
 const neo4jDriverInstance = initializeNeo4jDriver();
@@ -112,6 +134,17 @@ const logout = () => {
   userStore.clearUser();
   router.push('/login');
 };
+
+const toggleSidebar = () => {
+  isSidebarVisible.value = !isSidebarVisible.value;
+};
+
+const handleDropdownCommand = (command: string) => {
+  if (command === 'logout') {
+    logout();
+  }
+};
+
 </script>
 
 <style scoped>
