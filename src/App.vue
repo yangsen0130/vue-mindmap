@@ -1,59 +1,49 @@
 <template>
-  <div class="min-h-screen flex flex-col">
-    <!-- Loading State -->
-    <div v-if="isDataLoading" class="flex-1 flex items-center justify-center">
-      <p>Loading...</p>
-    </div>
-    <!-- Error State -->
-    <div v-else-if="dataLoadingError" class="flex-1 flex items-center justify-center text-red-500">
-      <p>{{ dataLoadingError }}</p>
-    </div>
-    <!-- Main Content -->
-    <div v-else class="flex-1 flex">
-      <OutlineEditor v-model="rootMindMapNode" class="w-1/2 border-r"/>
-      <MindMap :rootNode="rootMindMapNode" class="w-1/2"/>
-    </div>
+  <div class="min-h-screen bg-gray-100">
+    <!-- Navigation Bar -->
+    <nav class="bg-white shadow-sm">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between h-16">
+          <div class="flex">
+            <!-- Logo or App Name -->
+            <router-link to="/" class="flex-shrink-0 flex items-center text-xl font-bold">MindMap App</router-link>
+          </div>
+          <div class="flex items-center">
+            <!-- Authentication Links -->
+            <router-link v-if="!user" to="/login" class="text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">Login</router-link>
+            <router-link v-if="!user" to="/register" class="text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">Register</router-link>
+            <!-- Logout Button -->
+            <button v-if="user" @click="logout" class="text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">Logout</button>
+          </div>
+        </div>
+      </div>
+    </nav>
+    <!-- Router View -->
+    <router-view></router-view>
   </div>
 </template>
 
-<script setup lang="ts">
-import { ref, onMounted, provide } from 'vue';
-import OutlineEditor from './components/OutlineEditor.vue';
-import MindMap from './components/MindMap.vue';
-import { Node } from './types/Node';
-import {
-  initializeNeo4jDriver,
-  loadMindMapData,
-  updateNodeInNeo4j,
-  addChildNodeInNeo4j,
-  removeNodeInNeo4j,
-} from './services/neo4jService.ts';
+<script lang="ts">
+import { defineComponent, computed } from 'vue'
+import { useRouter } from 'vue-router'
+import { useUserStore } from './store/user'
 
-// Initialize state variables
-const isDataLoading = ref(true);
-const dataLoadingError = ref<string | null>(null);
-const rootMindMapNode = ref<Node | null>(null);
+export default defineComponent({
+  name: 'App',
+  setup() {
+    const userStore = useUserStore()
+    const router = useRouter()
 
-// Create Neo4j driver instance
-const neo4jDriverInstance = initializeNeo4jDriver();
+    const user = computed(() => userStore.user)
 
-// Provide driver and data functions to child components
-provide('neo4jDriver', neo4jDriverInstance);
-provide('updateNodeInNeo4j', updateNodeInNeo4j);
-provide('addChildNodeInNeo4j', addChildNodeInNeo4j);
-provide('removeNodeInNeo4j', removeNodeInNeo4j);
+    const logout = () => {
+      userStore.clearUser()
+      router.push('/login')
+    }
 
-// Load data when the component is mounted
-onMounted(async () => {
-  try {
-    rootMindMapNode.value = await loadMindMapData(neo4jDriverInstance);
-  } catch (err) {
-    dataLoadingError.value = 'Failed to load data from Neo4j.';
-    console.error(err);
-  } finally {
-    isDataLoading.value = false;
+    return { user, logout }
   }
-});
+})
 </script>
 
 <style>
